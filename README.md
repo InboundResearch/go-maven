@@ -21,7 +21,7 @@ This is probably NOT the "approved" maven way, or even the "approved" Perl way. 
 discussion of why Maven doesn't seem to be the best tool for this job will have to go 
 elsewhere.
  
- ## Usage
+## Usage
  
      > go (default, equivalent to mvn test)
      > go [clean] [notest] [build|package|install|deploy]
