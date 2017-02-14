@@ -76,7 +76,7 @@ if ($task eq "release") {
     $input = <STDIN>; $input = trim ($input);
     $nextDevelopmentVersion = (length ($input) > 0) ? $input : $nextDevelopmentVersion;
 
-    # configure testing by default, elittle the user if they want to skip it
+    # configure testing by default, belittle the user if they want to skip it
     my $command = $mavenCommand;
     if ($shouldTest == 0) {
         print "WARNING - release without test, type 'y' to confirm (default [n]):";
