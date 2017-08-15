@@ -31,7 +31,10 @@ sub checkin {
 
 sub execute {
     my ($task, $command) = @_;
-    print STDERR "Execute task ($task)\n";
+    print STDERR "Execute task ($task)";
+    #print STDERR " as ($command)";
+    print STDERR "\n";
+    $command = "$command 2>&1 | tee build.txt";
     system ($command) && die ("($task) FAILED\n");
 }
 
