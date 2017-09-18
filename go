@@ -3,11 +3,14 @@
 use strict;
 use warnings FATAL => 'all';
 
+use File::Which;
+
 # this is a maven wrapper intended to solve the problem that release builds don't actually deploy
 # to the local nexus server using the maven release plugin
 
 # global variables
-our $mavenCommand = "mvn --quiet";
+our $gitCommand = which ("git");
+our $mavenCommand = which ("mvn") . " --quiet";
 our $goPropertiesFileName = "go.properties";
 our ($releaseBuildType, $snapshotBuildType) = ("", "-SNAPSHOT");
 
@@ -26,7 +29,7 @@ sub setMavenVersion {
 sub checkin {
     my $message = shift;
     print STDERR "Check-in ($message).\n";
-    system ("git add --all . && git commit -m 'go git ($message)' && git push origin HEAD;");
+    system ("$gitCommand add --all . && $gitCommand commit -m 'go git ($message)' && $gitCommand push origin HEAD;");
 }
 
 sub execute {
@@ -65,7 +68,7 @@ foreach (@ARGV) {
 # figure out how to fulfill the task
 if ($task eq "release") {
     # will be 0 if there are no changes...
-    system ("git diff --quiet HEAD;") && die ("Please commit all changes before performing a release.\n");
+    system ("$gitCommand diff --quiet HEAD;") && die ("Please commit all changes before performing a release.\n");
 
     # ask the user to supply the new release version (default to the current version sans "SNAPSHOT"
     print "What is the release version (default [$version]): ";
@@ -94,7 +97,7 @@ if ($task eq "release") {
     execute ($task, "$command clean deploy");
     checkin("$version");
     print STDERR "Tag release ($version).\n";
-    system ("git tag -a 'Release-$version' -m 'Release-$version';");
+    system ("$gitCommand tag -a 'Release-$version' -m 'Release-$version';");
 
     # update the version to the development version and check it in
     setMavenVersion($nextDevelopmentVersion, $snapshotBuildType);
