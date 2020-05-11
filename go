@@ -92,9 +92,11 @@ if ($task eq "release") {
         }
     }
 
-    # set the version, and execute the release deployment build
+    # set the version, and execute the release deployment build (forced verbose)
     setMavenVersion($version, $releaseBuildType);
-    execute ($task, "$command clean deploy");
+    my $releaseCommand = $command;
+    $releaseCommand =~ s/ --quiet//;
+    execute ($task, "$releaseCommand clean deploy");
     checkin("$version");
     print STDERR "Tag release ($version).\n";
     system ("$gitCommand tag -a 'Release-$version' -m 'Release-$version';");
