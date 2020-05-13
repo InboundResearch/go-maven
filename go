@@ -2,6 +2,7 @@
 
 use strict;
 use warnings FATAL => 'all';
+use Cwd;
 
 use File::Which;
 
@@ -67,6 +68,13 @@ foreach (@ARGV) {
 
 # figure out how to fulfill the task
 if ($task eq "release") {
+    # navigate up looking for the .git directory at the root of the repository
+    while (! (-d ".git")) {
+        chdir "..";
+    }
+    my $directory = getcwd ();
+    print STDERR "Build in dir ($directory)\n";
+
     # will be 0 if there are no changes...
     system ("$gitCommand diff --quiet HEAD;") && die ("Please commit all changes before performing a release.\n");
 
