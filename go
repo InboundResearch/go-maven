@@ -42,6 +42,21 @@ sub execute {
     system ($command) && die ("($task) FAILED\n");
 }
 
+# go up until we find a pom file, and then go up as long as there is a parent pom file
+while ((getcwd () ne "/") && (! (-f "pom.xml"))) {
+    chdir "..";
+}
+while ((getcwd () ne "/") && (-f "../pom.xml")) {
+    chdir "..";
+}
+if (! (-f "pom.xml")) {
+    print STDERR "ERROR - Not a project!\n";
+        exit(1);
+}
+my $directory = getcwd ();
+print STDERR "Build in dir ($directory)\n";
+
+
 # get the version from maven, do this before checking options
 my $mvnVersionCommand = "$mavenCommand -Dexec.executable='echo' -Dexec.args='\${project.version}' --non-recursive exec:exec";
 my @mvnVersionCommandOutput = `$mvnVersionCommand`;
@@ -68,15 +83,6 @@ foreach (@ARGV) {
 
 # figure out how to fulfill the task
 if ($task eq "release") {
-    # navigate up looking for the .git directory at the root of the repository
-    my $directory = getcwd ();
-    while (($directory ne "/") && (! (-d ".git"))) {
-        chdir "..";
-        $directory = getcwd ();
-    }
-    if ((-d ".git") && (-f "pom.xml")) {
-        print STDERR "Build in dir ($directory)\n";
-
         # will be 0 if there are no changes...
         system("$gitCommand diff --quiet HEAD;") && die("Please commit all changes before performing a release.\n");
 
@@ -117,9 +123,6 @@ if ($task eq "release") {
         # update the version to the development version and check it in
         setMavenVersion($nextDevelopmentVersion, $snapshotBuildType);
         checkin("$nextDevelopmentVersion");
-    } else {
-        print STDERR "ERROR - not a project\n";
-    }
 } else {
     my $command = ($shouldClean == 1) ? "$mavenCommand clean" : "$mavenCommand";
     if ($task eq "build") {
