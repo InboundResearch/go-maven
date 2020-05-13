@@ -69,49 +69,57 @@ foreach (@ARGV) {
 # figure out how to fulfill the task
 if ($task eq "release") {
     # navigate up looking for the .git directory at the root of the repository
-    while (! (-d ".git")) {
-        chdir "..";
-    }
     my $directory = getcwd ();
-    print STDERR "Build in dir ($directory)\n";
-
-    # will be 0 if there are no changes...
-    system ("$gitCommand diff --quiet HEAD;") && die ("Please commit all changes before performing a release.\n");
-
-    # ask the user to supply the new release version (default to the current version sans "SNAPSHOT"
-    print "What is the release version (default [$version]): ";
-    my $input = <STDIN>; $input = trim ($input);
-    if (length ($input) > 0) { $version = $input; }
-
-    # ask the user to supply the next development version (default to a dot-release)
-    my ($major, $minor, $dot) = split (/\./, $version);
-    my $nextDevelopmentVersion = "$major.$minor." . ($dot + 1);
-    print "What will the new development version be (default [$nextDevelopmentVersion]): ";
-    $input = <STDIN>; $input = trim ($input);
-    $nextDevelopmentVersion = (length ($input) > 0) ? $input : $nextDevelopmentVersion;
-
-    # configure testing by default, belittle the user if they want to skip it
-    my $command = $mavenCommand;
-    if ($shouldTest == 0) {
-        print "WARNING - release without test, type 'y' to confirm (default [n]):";
-        $input = <STDIN>; $input = lc (trim ($input));
-        if ($input eq "y") {
-            $command = "$command -Dmaven.test.skip=true";
-        }
+    while (($directory ne "/") && (! (-d ".git"))) {
+        chdir "..";
+        $directory = getcwd ();
     }
+    if ((-d ".git") && (-f "pom.xml")) {
+        print STDERR "Build in dir ($directory)\n";
 
-    # set the version, and execute the release deployment build (forced verbose)
-    setMavenVersion($version, $releaseBuildType);
-    my $releaseCommand = $command;
-    $releaseCommand =~ s/ --quiet//;
-    execute ($task, "$releaseCommand clean deploy");
-    checkin("$version");
-    print STDERR "Tag release ($version).\n";
-    system ("$gitCommand tag -a 'Release-$version' -m 'Release-$version';");
+        # will be 0 if there are no changes...
+        system("$gitCommand diff --quiet HEAD;") && die("Please commit all changes before performing a release.\n");
 
-    # update the version to the development version and check it in
-    setMavenVersion($nextDevelopmentVersion, $snapshotBuildType);
-    checkin("$nextDevelopmentVersion");
+        # ask the user to supply the new release version (default to the current version sans "SNAPSHOT"
+        print "What is the release version (default [$version]): ";
+        my $input = <STDIN>;
+        $input = trim($input);
+        if (length($input) > 0) {$version = $input;}
+
+        # ask the user to supply the next development version (default to a dot-release)
+        my ($major, $minor, $dot) = split(/\./, $version);
+        my $nextDevelopmentVersion = "$major.$minor." . ($dot + 1);
+        print "What will the new development version be (default [$nextDevelopmentVersion]): ";
+        $input = <STDIN>;
+        $input = trim($input);
+        $nextDevelopmentVersion = (length($input) > 0) ? $input : $nextDevelopmentVersion;
+
+        # configure testing by default, belittle the user if they want to skip it
+        my $command = $mavenCommand;
+        if ($shouldTest == 0) {
+            print "WARNING - release without test, type 'y' to confirm (default [n]):";
+            $input = <STDIN>;
+            $input = lc(trim($input));
+            if ($input eq "y") {
+                $command = "$command -Dmaven.test.skip=true";
+            }
+        }
+
+        # set the version, and execute the release deployment build (forced verbose)
+        setMavenVersion($version, $releaseBuildType);
+        my $releaseCommand = $command;
+        $releaseCommand =~ s/ --quiet//;
+        execute($task, "$releaseCommand clean deploy");
+        checkin("$version");
+        print STDERR "Tag release ($version).\n";
+        system("$gitCommand tag -a 'Release-$version' -m 'Release-$version';");
+
+        # update the version to the development version and check it in
+        setMavenVersion($nextDevelopmentVersion, $snapshotBuildType);
+        checkin("$nextDevelopmentVersion");
+    } else {
+        print STDERR "ERROR - not a project\n";
+    }
 } else {
     my $command = ($shouldClean == 1) ? "$mavenCommand clean" : "$mavenCommand";
     if ($task eq "build") {
